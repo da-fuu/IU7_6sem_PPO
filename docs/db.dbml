@@ -1,0 +1,40 @@
+Project TimeTracker {
+  database_type: 'SQLite'
+}
+
+Table users {
+  uid varchar(36) [primary key]
+  login varchar(100) [unique, not null]
+  name varchar(100) [not null]
+  password_hash varchar(255) [not null]
+  role varchar(20) [not null]
+}
+
+Table categories {
+  uid varchar(36) [primary key]
+  user_id varchar(36)
+  name varchar(100) [not null]
+  color_hex varchar(7) [not null]
+  is_default boolean [not null]
+}
+
+Table time_records {
+  uid varchar(36) [primary key]
+  user_id varchar(36) [not null]
+  category_id varchar(36) [not null]
+  start_time integer [not null]
+  end_time integer
+  description text [not null]
+}
+
+Table time_record_history {
+  uid varchar(36) [primary key]
+  record_id varchar(36) [not null]
+  description text [not null]
+  modified_at integer [not null]
+}
+
+Ref: categories.user_id > users.uid [delete: cascade, update: cascade]
+Ref: time_records.user_id > users.uid [delete: cascade, update: cascade]
+Ref: time_records.category_id > categories.uid [delete: cascade, update: cascade]
+Ref: time_record_history.record_id > time_records.uid [delete: cascade, update: cascade]

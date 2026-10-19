@@ -1,0 +1,125 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+package "Графический интерфейс" #E3F2FD {
+
+    package "UI" #FFFFFF {
+        class MainActivity <<Activity>>
+        class AuthScreen <<Composable>>
+        class DashboardScreen <<Composable>>
+        class CategoriesScreen <<Composable>>
+        class RecordsScreen <<Composable>>
+        class MigrationScreen <<Composable>>
+    }
+
+    package "ViewModels" #FFFFFF {
+        class AuthViewModel <<ViewModel>> {
+            + state: StateFlow<AuthState>
+            + isLoggedIn: StateFlow<Boolean>
+            + userName: StateFlow<String?>
+            + login(login, pass)
+            + register(login, name, pass)
+            + logout()
+        }
+
+        class DashboardViewModel <<ViewModel>> {
+            + categories: StateFlow<List<Category>>
+            + activeRecord: StateFlow<TimeRecord?>
+            + startTimer(categoryId)
+            + stopTimer()
+        }
+
+        class CategoriesViewModel <<ViewModel>> {
+            + categories: StateFlow<List<Category>>
+            + isAdmin: StateFlow<Boolean>
+            + addCategory(name, color, isBase)
+            + deleteCategory(category)
+        }
+
+        class RecordsViewModel <<ViewModel>> {
+            + records: StateFlow<List<TimeRecord>>
+            + categories: StateFlow<List<Category>>
+            + historyList: StateFlow<List<DescriptionVersion>>
+            + selectedRecordIdForHistory: StateFlow<RecordId?>
+            + addManualRecord(catId, start, end, desc)
+            + loadHistory(recordId)
+            + updateDescription(recordId, newDesc)
+            + rollbackDescription(recordId, versionId)
+        }
+
+        class MigrationViewModel <<ViewModel>> {
+            + migrationState: StateFlow<MigrationState>
+        }
+    }
+
+    package "Migration" #FFFFFF {
+        class MigrationManager <<Manager>> {
+            + suspend checkAndMigrate(): MigrationState
+        }
+    }
+
+    package "Session" #FFFFFF {
+        class SessionManager <<Manager>> {
+            + currentUserIdFlow: Flow<UserId?>
+            + currentUserId: UserId?
+            + login(userId)
+            + logout()
+        }
+    }
+
+    MainActivity ..> AuthScreen
+    MainActivity ..> DashboardScreen
+    MainActivity ..> CategoriesScreen
+    MainActivity ..> RecordsScreen
+    MainActivity ..> MigrationScreen
+
+    AuthScreen ..> AuthViewModel
+    DashboardScreen ..> DashboardViewModel
+    CategoriesScreen ..> CategoriesViewModel
+    RecordsScreen ..> RecordsViewModel
+    MigrationScreen ..> MigrationViewModel
+
+    AuthViewModel o--> SessionManager
+    DashboardViewModel o--> SessionManager
+    CategoriesViewModel o--> SessionManager
+    RecordsViewModel o--> SessionManager
+
+    MigrationViewModel --> MigrationManager
+
+    package "Migration Domain" <<External>> #LightGray {
+        class DataMigrationUseCase
+    }
+
+    MigrationManager --> DataMigrationUseCase
+
+    package "Domain" <<External>> #LightGray {
+        class LoginUserUseCase
+        class RegisterUserUseCase
+        class GetUserInfoUseCase
+        class StartTimerUseCase
+        class StopTimerUseCase
+        class GetCategoriesUseCase
+        class GetTimeRecordsUseCase
+        class UpdateRecordDescriptionUseCase
+        class RollbackRecordDescriptionUseCase
+        class GetDescriptionHistoryUseCase
+    }
+
+    AuthViewModel --> LoginUserUseCase
+    AuthViewModel --> RegisterUserUseCase
+    AuthViewModel --> GetUserInfoUseCase
+
+    DashboardViewModel --> StartTimerUseCase
+    DashboardViewModel --> StopTimerUseCase
+    DashboardViewModel --> GetCategoriesUseCase
+
+    CategoriesViewModel --> GetCategoriesUseCase
+
+    RecordsViewModel --> GetTimeRecordsUseCase
+    RecordsViewModel --> UpdateRecordDescriptionUseCase
+    RecordsViewModel --> RollbackRecordDescriptionUseCase
+    RecordsViewModel --> GetDescriptionHistoryUseCase
+}
+
+@enduml

@@ -1,0 +1,40 @@
+@startuml
+!include <c4/C4_Component.puml>
+
+Person(user, "Пользователь", "Взаимодействует с CLI или Android UI")
+
+ContainerDb(room_db, "Локальная БД (Room)", "SQLite", "Хранение данных")
+ContainerDb(objectbox_db, "Локальная БД (ObjectBox)", "NoSQL", "Хранение данных")
+
+Container_Boundary(app_container, "TimeTracker") {
+
+    Component(app, "Компонент App (Android)", "Jetpack Compose", "Графический интерфейс для мобильных устройств.")
+
+    Component(tech_ui, "Компонент Tech UI (CLI)", "Kotlin JVM", "Интерфейс командной строки для JVM и Android.")
+
+    Component(domain, "Компонент бизнес-логики", "Kotlin UseCases, Entities", "Содержит правила валидации и подсчет времени.")
+
+    Component(data_room, "Компонент доступа к данным (Room)", "Repository Pattern, Room DAO", "Доступ к данным Room.")
+
+    Component(data_objectbox, "Компонент доступа к данным (ObjectBox)", "ObjectBox", "Доступ к данным ObjectBox.")
+
+    Component(migration, "Компонент миграции", "DataMigrationUseCase", "Обеспечивает перенос данных из Room в ObjectBox.")
+}
+
+Rel(user, app, "Нажимает кнопки", "Touch UI")
+Rel(user, tech_ui, "Вводит команды", "CLI")
+
+Rel(app, domain, "Вызывает сценарии (Use Cases)", "Kotlin Flow / Coroutines")
+Rel(app, migration, "Запускает миграцию", "MigrationManager")
+Rel(tech_ui, domain, "Вызывает сценарии (Use Cases)", "Blocking / Coroutines")
+
+Rel(data_room, domain, "Реализует интерфейсы репозиториев", "Implements")
+Rel(data_objectbox, domain, "Реализует интерфейсы репозиториев", "Implements")
+
+Rel(data_room, room_db, "Выполняет SQL-запросы", "Room")
+Rel(data_objectbox, objectbox_db, "Сохраняет объекты", "ObjectBox")
+
+Rel(migration, data_room, "Читает данные", "Repository")
+Rel(migration, data_objectbox, "Записывает данные", "Repository")
+
+@enduml

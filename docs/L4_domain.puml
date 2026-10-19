@@ -1,0 +1,127 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+package "Бизнес-логика" #E8F5E9 {
+
+    class User <<Entity>> {
+        - id: UserId
+        - login: String
+        - name: String
+        - passwordHash: String
+        - role: UserRole
+    }
+
+    class Category <<Entity>> {
+        - id: CategoryId
+        - userId: UserId?
+        - name: String
+        - colorHex: String
+        - isDefault: Boolean
+    }
+
+    class TimeRecord <<Entity>> {
+        - id: RecordId
+        - userId: UserId
+        - categoryId: CategoryId
+        - startTime: Instant
+        - endTime: Instant?
+        - description: String
+        + getDurationMinutes(): Long
+    }
+
+    class DescriptionVersion <<Entity>> {
+        - id: VersionId
+        - recordId: RecordId
+        - description: String
+        - modifiedAt: Instant
+    }
+
+    class BusinessConfig <<Model>> {
+        - minDurationMinutes: Long
+    }
+
+    interface IUserRepository <<Interface>> {
+        + suspend findByLogin(login: String): User?
+        + suspend saveUser(user: User): Result<Unit>
+        + suspend getUserRole(userId: UserId): UserRole?
+        + suspend getUserById(userId: UserId): User?
+        + suspend getAllUsers(): List<User>
+    }
+
+    interface ITimeRecordRepository <<Interface>> {
+        + suspend saveRecord(record: TimeRecord): Result<Unit>
+        + suspend getRecordById(recordId: RecordId): TimeRecord?
+        + suspend getOverlappingRecords(...): List<TimeRecord>
+        + suspend getActiveSession(userId: UserId): TimeRecord?
+        + suspend getTimeRecords(userId: UserId): List<TimeRecord>
+        + suspend getDescriptionHistory(recordId: RecordId): List<DescriptionVersion>
+        + suspend addDescriptionVersion(version: DescriptionVersion): Result<Unit>
+        + suspend deleteRecord(recordId: RecordId): Result<Unit>
+        + suspend getAllTimeRecords(): List<TimeRecord>
+    }
+
+    interface ICategoryRepository <<Interface>> {
+        + getCategoriesFlow(userId: UserId): Flow<List<Category>>
+        + suspend saveCategory(category: Category): Result<Unit>
+        + suspend findCategoryByName(...): Category?
+        + suspend deleteCategory(categoryId: CategoryId): Result<Unit>
+        + suspend getAllCategories(): List<Category>
+    }
+
+    interface IPasswordHasher <<Interface>> {
+        + hash(raw: String): String
+        + verify(raw: String, hashed: String): Boolean
+    }
+
+    package "Сценарии" #FFFFFF {
+        class RegisterUserUseCase <<UseCase>>
+        class LoginUserUseCase <<UseCase>>
+        class GetUserInfoUseCase <<UseCase>>
+        class StartTimerUseCase <<UseCase>>
+        class StopTimerUseCase <<UseCase>>
+        class AddManualRecordUseCase <<UseCase>>
+        class GetCategoriesUseCase <<UseCase>>
+        class GetTimeRecordsUseCase <<UseCase>>
+        class ManageUserCategoryUseCase <<UseCase>>
+        class DeleteCategoryUseCase <<UseCase>>
+        class AdminManageBaseCategoryUseCase <<UseCase>>
+        class AdminDeleteBaseCategoryUseCase <<UseCase>>
+        class UpdateRecordDescriptionUseCase <<UseCase>>
+        class RollbackRecordDescriptionUseCase <<UseCase>>
+        class GetDescriptionHistoryUseCase <<UseCase>>
+    }
+
+    User "1" <-- "*" Category : "Владеет"
+    User "1" <-- "*" TimeRecord : "Владеет"
+    Category "1" <-- "*" TimeRecord : "Относится к"
+    TimeRecord "1" <-- "*" DescriptionVersion : "Имеет историю"
+
+    RegisterUserUseCase o--> IUserRepository
+    RegisterUserUseCase o--> IPasswordHasher
+    LoginUserUseCase o--> IUserRepository
+    LoginUserUseCase o--> IPasswordHasher
+    GetUserInfoUseCase o--> IUserRepository
+
+    StartTimerUseCase o--> ITimeRecordRepository
+    StopTimerUseCase o--> ITimeRecordRepository
+    StopTimerUseCase o--> BusinessConfig
+
+    AddManualRecordUseCase o--> ITimeRecordRepository
+    AddManualRecordUseCase o--> BusinessConfig
+
+    GetTimeRecordsUseCase o--> ITimeRecordRepository
+    UpdateRecordDescriptionUseCase o--> ITimeRecordRepository
+    RollbackRecordDescriptionUseCase o--> ITimeRecordRepository
+    GetDescriptionHistoryUseCase o--> ITimeRecordRepository
+
+    GetCategoriesUseCase o--> ICategoryRepository
+    ManageUserCategoryUseCase o--> ICategoryRepository
+    DeleteCategoryUseCase o--> ICategoryRepository
+    AdminManageBaseCategoryUseCase o--> ICategoryRepository
+    AdminManageBaseCategoryUseCase o--> IUserRepository
+    AdminDeleteBaseCategoryUseCase o--> ICategoryRepository
+    AdminDeleteBaseCategoryUseCase o--> IUserRepository
+}
+
+@enduml
